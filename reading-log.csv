@@ -1,0 +1,11 @@
+Date,Title,Folder,Link,Tags,OneLineSummary,Status
+2026-09-17,A Survey of On-Policy Distillation for Large Language Models,2026_opd-survey,https://arxiv.org/abs/2604.00626,"opd,survey,post-training",OPD 综述：定义、方法分类与开放问题,todo
+2026-09-17,"The Many Faces of On-Policy Distillation: Pitfalls, Mechanisms, and Fixes",2026_many-faces-opd,https://arxiv.org/abs/2605.11182,"opd,failure-modes,post-training",OPD 的典型陷阱、内在机制与系统性修复,todo
+2026-09-17,ExOPD: Learning beyond Teacher — Generalized On-Policy Distillation with Reward Extrapolation,2026_exopd,https://arxiv.org/abs/2602.12125,"opd,reward-extrapolation,post-training",用 reward 外推实现 generalized OPD，让学生超越老师,todo
+2026-09-17,Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes,2026_revisiting-opd,https://arxiv.org/abs/2603.25562,"opd,empirical,post-training",实证研究 OPD 的失败模式并给出简单修复,todo
+2026-09-17,Lightning OPD: Efficient Post-Training for Large Reasoning Models with Offline On-Policy Distillation,2026_lightning-opd,https://arxiv.org/abs/2604.13010,"opd,offline,reasoning,post-training",离线 OPD：大推理模型的高效后训练,todo
+2026-09-17,Prune-OPD: Efficient and Reliable On-Policy Distillation for Long-Horizon Reasoning,2026_prune-opd,https://arxiv.org/abs/2605.07804,"opd,long-horizon,reasoning,efficiency",面向长程推理的高效可靠 OPD（剪枝）,todo
+2026-09-17,Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models,2026_self-distilled-reasoner,https://arxiv.org/abs/2601.18734,"opd,self-distillation,reasoning",On-policy 自蒸馏：不需要外部 teacher,todo
+2026-09-17,f-OPD: Stabilizing Long-Horizon On-Policy Distillation with Freshness-Aware Control,2026_f-opd,https://arxiv.org/abs/2605.17862,"opd,long-horizon,stability",freshness-aware 控制稳定长程 OPD 训练,todo
+2026-09-17,DiffusionOPD: A Unified Perspective of On-Policy Distillation in Diffusion Models,2026_diffusionopd,https://arxiv.org/abs/2605.15055,"opd,diffusion-models",扩散模型中的 OPD 统一视角,todo
+2026-09-17,Uni-OPD: Unifying On-Policy Distillation with a Dual-Perspective Recipe,2026_uni-opd,https://arxiv.org/abs/2605.03677,"opd,unified,post-training",双视角统一配方统一 OPD,todo
