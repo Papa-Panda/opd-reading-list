@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPD Reading List — 论文可视化</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2937; --muted:#6b7280;
+    --accent:#2563eb; --accent-soft:#eff6ff; --border:#e5e7eb;
+    --amber:#b45309; --amber-bg:#fef3c7; --green:#047857; --green-bg:#d1fae5;
+    --blue:#1d4ed8; --orange:#c2410c; --purple:#7e22ce;
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+       background:var(--bg); color:var(--ink); margin:0; line-height:1.6}
+  header{background:linear-gradient(135deg,#1e3a8a,#3b82f6); color:#fff; padding:36px 24px 28px}
+  header h1{margin:0 0 6px; font-size:26px}
+  header p{margin:4px 0; opacity:.92; font-size:14px}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 20px}
+  .stats{display:flex; gap:12px; flex-wrap:wrap; margin:18px 0}
+  .stat{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 16px; font-size:14px}
+  .stat b{font-size:20px; color:var(--accent)}
+  nav.toc{position:sticky; top:0; z-index:50; background:rgba(255,255,255,.96); border-bottom:1px solid var(--border);
+          backdrop-filter:blur(6px)}
+  nav.toc .wrap{display:flex; gap:4px; padding:10px 20px; flex-wrap:wrap; align-items:center}
+  nav.toc a{color:var(--ink); text-decoration:none; font-size:14px; padding:6px 12px; border-radius:8px}
+  nav.toc a:hover{background:var(--accent-soft); color:var(--accent)}
+  .searchbar{margin-left:auto; display:flex; gap:8px}
+  .searchbar input{border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:14px; width:240px}
+  section{margin:34px 0}
+  section h2{font-size:20px; border-left:4px solid var(--accent); padding-left:10px; margin-bottom:6px}
+  section .desc{color:var(--muted); font-size:13px; margin:0 0 14px}
+  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+        display:flex; flex-direction:column; gap:8px; transition:box-shadow .15s}
+  .card:hover{box-shadow:0 6px 18px rgba(37,99,235,.12)}
+  .card h3{margin:0; font-size:15.5px; line-height:1.45}
+  .card h3 a{color:var(--ink); text-decoration:none}
+  .card h3 a:hover{color:var(--accent)}
+  .meta{font-size:12.5px; color:var(--muted)}
+  .oneline{font-size:14px; color:#374151; border-left:3px solid var(--accent); padding-left:10px}
+  .kv{font-size:13px}
+  .kv b{color:#111827}
+  .tags{display:flex; flex-wrap:wrap; gap:6px}
+  .tag{font-size:11.5px; background:#eef2ff; color:#3730a3; border-radius:20px; padding:2px 10px; cursor:pointer}
+  .tag:hover{background:#c7d2fe}
+  .badge{align-self:flex-start; font-size:12px; border-radius:20px; padding:2px 12px; font-weight:600}
+  .badge.todo{background:var(--amber-bg); color:var(--amber)}
+  .badge.reading{background:#dbeafe; color:var(--blue)}
+  .badge.done{background:var(--green-bg); color:var(--green)}
+  .nums{font-size:13px; background:#f9fafb; border:1px dashed var(--border); border-radius:8px; padding:8px 10px}
+  /* timeline */
+  .tl{position:relative; margin:30px 10px 10px; height:150px}
+  .tl-axis{position:absolute; top:60px; left:0; right:0; height:2px; background:#cbd5e1}
+  .tl-dot{position:absolute; top:60px; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%;
+          background:var(--accent); border:3px solid #fff; box-shadow:0 0 0 2px var(--accent); cursor:pointer}
+  .tl-dot:hover{transform:translate(-50%,-50%) scale(1.35)}
+  .tl-label{position:absolute; transform:translateX(-50%); font-size:11.5px; text-align:center; width:150px; cursor:pointer}
+  .tl-label .d{color:var(--muted); font-size:11px}
+  .tl-label:hover .t{color:var(--accent)}
+  .tl-top{top:0} .tl-bottom{top:78px}
+  /* graph */
+  .graph-box{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:8px; overflow-x:auto}
+  #graph{width:100%; height:auto; min-width:900px}
+  .g-node{cursor:pointer}
+  .g-node rect{fill:#fff; stroke:var(--accent); stroke-width:1.6; rx:10}
+  .g-node text{font-size:12.5px; fill:var(--ink); font-weight:600}
+  .g-node .arxiv{font-size:10.5px; fill:var(--muted); font-weight:400}
+  .g-node.dim{opacity:.18} .g-edge.dim{opacity:.08}
+  .g-edge{fill:none; stroke-width:1.8}
+  .g-edge.e-inherit{stroke:var(--blue)} .g-edge.e-compare{stroke:var(--orange)}
+  .g-edge.e-extend{stroke:var(--green)} .g-edge.e-empirical{stroke:var(--purple)}
+  .g-elabel{font-size:10.5px; fill:#374151; paint-order:stroke; stroke:#fff; stroke-width:4px}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; margin:8px 4px 0}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .sw{display:inline-block; width:22px; height:3px; border-radius:2px}
+  /* table */
+  .tbl-wrap{background:var(--card); border:1px solid var(--border); border-radius:12px; overflow-x:auto}
+  table{border-collapse:collapse; width:100%; font-size:13px; min-width:960px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top}
+  th{background:#f3f4f6; cursor:pointer; user-select:none; white-space:nowrap; font-size:12.5px}
+  th:hover{color:var(--accent)}
+  th .arrow{font-size:10px; color:var(--accent)}
+  tr:hover td{background:#f9fafb}
+  td .t a{color:var(--ink); text-decoration:none; font-weight:600}
+  td .t a:hover{color:var(--accent)}
+  .hidden{display:none !important}
+  footer{color:var(--muted); font-size:12.5px; padding:26px 0 40px; text-align:center}
+  .note{background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:10px 14px; font-size:13px; margin:14px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>📚 OPD Reading List — 论文可视化</h1>
+    <p>OPD = On-Policy Distillation（在线策略蒸馏）· 来源：Bilibili「丁师兄大模型」《10 篇值得阅读的 OPD Paper｜2026 年，别死磕 RL 了》评论区清单</p>
+    <p>数据来源：仓库内 papers/*/NOTES.md、README.md、reading-log.csv ＋ arXiv 公开摘要 · 生成时间：2026-09-26</p>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#cards">论文卡片</a><a href="#timeline">时间线</a><a href="#graphsec">关系图</a>
+  <a href="#table">对比表</a><a href="#tagssec">主题分布</a>
+  <span class="searchbar"><input id="q" type="text" placeholder="关键词搜索：标题 / 作者 / 标签 / 方法…"></span>
+</div></nav>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="note">⚠️ 仓库内 10 篇 NOTES.md 目前均为未填写的模板骨架（状态全为 <b>todo</b>）；下方「核心命题 / 关键方法 / 关键数字」提炼自各论文 arXiv 公开摘要，供阅读前速览。</div>
+
+  <section id="cards">
+    <h2>论文卡片</h2>
+    <p class="desc">每篇一句话核心命题、关键方法与关键数字结果。点击标签可按主题过滤。</p>
+    <div class="cards" id="cardGrid"></div>
+  </section>
+
+  <section id="timeline">
+    <h2>时间线</h2>
+    <p class="desc">按 arXiv 发布时间排列（2026-01 → 2026-05）。</p>
+    <div class="tl" id="timelineBox"><div class="tl-axis"></div></div>
+  </section>
+
+  <section id="graphsec">
+    <h2>论文间关系图</h2>
+    <p class="desc">点击节点高亮其关联论文与连线，再点一次复原。连线类型：继承 / 对比 / 扩展 / 实证支撑。</p>
+    <div class="graph-box"><svg id="graph" viewBox="0 0 1000 600" role="img" aria-label="OPD论文关系图"></svg></div>
+    <div class="legend">
+      <span><i class="sw" style="background:#1d4ed8"></i>继承 inherit</span>
+      <span><i class="sw" style="background:#c2410c"></i>对比 compare</span>
+      <span><i class="sw" style="background:#047857"></i>扩展 extend</span>
+      <span><i class="sw" style="background:#7e22ce"></i>实证支撑 empirical</span>
+    </div>
+  </section>
+
+  <section id="table">
+    <h2>对比表</h2>
+    <p class="desc">点击表头可排序；受顶部搜索框过滤。</p>
+    <div class="tbl-wrap"><table id="cmpTable">
+      <thead><tr>
+        <th data-k="idx">#</th><th data-k="title">论文</th><th data-k="arxiv">arXiv</th>
+        <th data-k="date">日期</th><th data-k="first">一作</th><th data-k="theme">主题</th>
+        <th data-k="numbers">关键数字</th><th data-k="status">状态</th>
+      </tr></thead>
+      <tbody id="cmpBody"></tbody>
+    </table></div>
+  </section>
+
+  <section id="tagssec">
+    <h2>主题分布</h2>
+    <p class="desc">按 reading-log.csv 的 Tags 统计（点击标签过滤卡片）。</p>
+    <div class="tags" id="tagCloud" style="font-size:14px"></div>
+  </section>
+
+  <footer>单文件自包含 HTML · 零外部网络依赖 · file:// 直接打开 · 数据: ~/workspace/opd-reading-list</footer>
+</div>
+<script>
+"use strict";
+/* ================= 数据 ================= */
+const PAPERS=[
+{id:"survey",idx:1,folder:"2026_opd-survey",short:"Survey",
+ title:"A Survey of On-Policy Distillation for Large Language Models",
+ oneLine:"OPD 综述：定义、方法分类与开放问题",
+ authors:"Mingyang Song, Mao Zheng",first:"Mingyang Song",
+ arxiv:"2604.00626",date:"2026-04-01",status:"todo",
+ tags:["opd","survey","post-training"],theme:"综述 / 形式化",
+ proposition:"把 OPD 形式化为 student 采样轨迹上的 f-divergence 最小化；沿三个设计轴（优化什么 / 信号从哪来 / 如何稳定训练）统一散落在 KD、RLHF、模仿学习社区的文献；阐明 OPD 与 KL-约束 RL 的联系。",
+ method:"f-divergence 统一框架；三设计轴分类（what to optimize / where signal comes from / how to stabilize）",
+ numbers:"exposure bias 随序列长度平方增长 O(L^2)；OPD 把复合误差项降 toward 线性",
+ link:"https://arxiv.org/abs/2604.00626"},
+{id:"many-faces",idx:2,folder:"2026_many-faces-opd",short:"Many Faces",
+ title:"The Many Faces of On-Policy Distillation: Pitfalls, Mechanisms, and Fixes",
+ oneLine:"OPD 的典型陷阱、内在机制与系统性修复",
+ authors:"Siqi Zhu, Xuyan Ye, Hongyu Lu, Weiye Shi, Ge Liu",first:"Siqi Zhu",
+ arxiv:"2605.11182",date:"2026-04-14",status:"todo",
+ tags:["opd","failure-modes","post-training"],theme:"失败模式实证",
+ proposition:"系统实证 OPD / OPSD 何时有效、何时失效：数学推理上 OPD 对 teacher 选择与 loss 形式高度敏感，结果好坏参半。",
+ method:"三个失败机制：(1) student 前缀导致的 teacher-student 分布失配 (2) 有偏 TopK reverse-KL 梯度的优化不稳定 (3) OPSD 中 PI-free 策略聚合 instance-specific 特权信息不足；修复：stop-gradient TopK、RLVR-adapted teacher、SFT-stabilized student",
+ numbers:"OPSD 在 PI 为共享隐规则（如 system prompt / 对齐偏好）时有效；instance-specific PI 时失效",
+ link:"https://arxiv.org/abs/2605.11182"},
+{id:"exopd",idx:3,folder:"2026_exopd",short:"ExOPD",
+ title:"ExOPD: Learning beyond Teacher \u2014 Generalized On-Policy Distillation with Reward Extrapolation",
+ oneLine:"用 reward 外推实现 generalized OPD，让学生超越老师",
+ authors:"Wenkai Yang, Weijie Liu, Ruobing Xie, Kai Yang, Saiyong Yang, Yankai Lin",first:"Wenkai Yang",
+ arxiv:"2602.12125",date:"2026-02-12",status:"todo",
+ tags:["opd","reward-extrapolation","post-training"],theme:"Reward 外推",
+ proposition:"理论证明 OPD 是 dense KL-约束 RL 的特例（reward 与 KL 恒等权重）；提出 G-OPD 框架：可调 reference model ＋ reward scaling 因子；scaling > 1（即 ExOPD）让学生突破老师性能边界。",
+ method:"G-OPD 框架；reward extrapolation（scaling > 1）；strong-to-weak 下用 teacher 的 pre-RL base 做 reference 做 reward correction（需访问 teacher 预 RL 版本，开销更大）",
+ numbers:"多领域专家 merge 回 student 后，ExOPD 超越各 domain teacher 的性能边界",
+ link:"https://arxiv.org/abs/2602.12125"},
+{id:"revisiting",idx:4,folder:"2026_revisiting-opd",short:"Revisiting OPD",
+ title:"Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes",
+ oneLine:"实证研究 OPD 的失败模式并给出简单修复",
+ authors:"Yuqian Fu, Haohuan Huang, Kaiwen Jiang, Jiacai Liu, Zhuo Jiang, Yuanheng Zhu, Dongbin Zhao",first:"Yuqian Fu",
+ arxiv:"2603.25562",date:"2026-03-26",status:"todo",
+ tags:["opd","empirical","post-training"],theme:"失败模式实证",
+ proposition:"token-level OPD 相对序列级 reverse-KL 最小化是有偏的，但方差上界更紧；未来 reward 耦合越强梯度方差越大、训练越不稳定。",
+ method:"三个失败模式：token 监督不均衡、student 前缀上 teacher 指导不可靠、tokenizer / 特殊 token 失配；修复：teacher top-K local support matching（截断 reverse-KL）＋ top-p rollout 采样 ＋ special-token masking",
+ numbers:"相对标准 sampled-token OPD 基线 +19.8%（单任务推理＋多任务 agentic 推理）",
+ link:"https://arxiv.org/abs/2603.25562"},
+{id:"lightning",idx:5,folder:"2026_lightning-opd",short:"Lightning OPD",
+ title:"Lightning OPD: Efficient Post-Training for Large Reasoning Models with Offline On-Policy Distillation",
+ oneLine:"离线 OPD：大推理模型的高效后训练",
+ authors:"Yecheng Wu, Song Han, Hai Cai",first:"Yecheng Wu",
+ arxiv:"2604.13010",date:"2026-05-08",status:"todo",
+ tags:["opd","offline","reasoning","post-training"],theme:"离线化 / 效率",
+ proposition:"OPD 训练全程需要 live teacher server，infra 开销大；预计算 teacher log-probs 做离线 OPD。关键发现 teacher consistency 条件：SFT 与 OPD 必须用同一 teacher，违背则引入梯度偏置（在线/离线都受损）。",
+ method:"离线 OPD ＋ teacher consistency 约束；证明其与标准 OPD 同最优、梯度差有界，且有隐式正则防 policy drift",
+ numbers:"4.0x 训练效率；Qwen3-8B-Base → AIME 2024 69.9%（仅 30 GPU hours）；Qwen3-30B-A3B MoE → 71.0%（单 8xH100 节点）",
+ link:"https://arxiv.org/abs/2604.13010"},
+{id:"prune-opd",idx:6,folder:"2026_prune-opd",short:"Prune-OPD",
+ title:"Prune-OPD: Efficient and Reliable On-Policy Distillation for Long-Horizon Reasoning",
+ oneLine:"面向长程推理的高效可靠 OPD（剪枝）",
+ authors:"Zhicheng Yang, Zhijiang Guo, Yifan Song, Minrui Xu, Yongxin Wang, Yiwei Wang, Xiaodan Liang, Jing Tang",first:"Zhicheng Yang",
+ arxiv:"2605.07804",date:"2026-05-18",status:"todo",
+ tags:["opd","long-horizon","reasoning","efficiency"],theme:"长程 / 剪枝",
+ proposition:"长程任务中 student 前缀必然漂离 teacher 思维链，teacher 密集 reward 失去局部可利用性；在已漂移轨迹上继续生成＋打分是纯算力浪费。",
+ method:"top-k overlap 实时监控 student-teacher 局部兼容性；检测到严重 drift 时单调降权后续 reward 并动态截断 rollout；兼容性高时自动扩展训练窗口（不是无脑截短，而是把算力重分配给可靠监督）",
+ numbers:"训练时间 -37.6% ~ -68.0%；AMC / AIME / HMMT 性能保持或提升",
+ link:"https://arxiv.org/abs/2605.07804"},
+{id:"self-distilled",idx:7,folder:"2026_self-distilled-reasoner",short:"Self-Distilled",
+ title:"Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models",
+ oneLine:"On-policy 自蒸馏：不需要外部 teacher",
+ authors:"Siyan Zhao, Zhihui Xie, Mengchen Liu, Jing Huang, Guan Pang, Feiyu Chen, Aditya Grover",first:"Siyan Zhao",
+ arxiv:"2601.18734",date:"2026-01-26",status:"todo",
+ tags:["opd","self-distillation","reasoning"],theme:"自蒸馏",
+ proposition:"单模型分饰 teacher/student：teacher 条件化特权信息（如 verified reasoning traces），student 只见问题；在 student 自己的 rollouts 上最小化两者 per-token 分布散度——不需要外部大 teacher。",
+ method:"OPSD（On-Policy Self-Distillation）；双 context 单模型；student rollout 上的 per-token divergence 最小化；显式利用推理数据集中的 ground-truth 解",
+ numbers:"数学推理上 token efficiency 超 RL 方法；性能超 off-policy 蒸馏方法",
+ link:"https://arxiv.org/abs/2601.18734"},
+{id:"f-opd",idx:8,folder:"2026_f-opd",short:"f-OPD",
+ title:"f-OPD: Stabilizing Long-Horizon On-Policy Distillation with Freshness-Aware Control",
+ oneLine:"freshness-aware 控制稳定长程 OPD 训练",
+ authors:"Xianwei Chen, Shimin Zhang, Jibin Wu",first:"Xianwei Chen",
+ arxiv:"2605.17862",date:"2026-05-18",status:"todo",
+ tags:["opd","long-horizon","stability"],theme:"长程 / 异步稳定",
+ proposition:"长程 OPD 必须异步执行才有效率，但异步在结构上偏离理想 on-policy 目标；把目标偏差理论分解为 rollout drift（student  rollout 陈旧）与 supervision drift（teacher 上下文陈旧）。",
+ method:"sample-level freshness score 量化缓冲样本相对 on-policy 目标的可靠性；自适应调节 stale 样本影响 ＋ 约束异步训练积累的 policy drift",
+ numbers:"推理 / tool-use / coding-agent 长程任务上达到同步优化相当的性能，同时保留异步吞吐优势",
+ link:"https://arxiv.org/abs/2605.17862"},
+{id:"diffusionopd",idx:9,folder:"2026_diffusionopd",short:"DiffusionOPD",
+ title:"DiffusionOPD: A Unified Perspective of On-Policy Distillation in Diffusion Models",
+ oneLine:"扩散模型中的 OPD 统一视角",
+ authors:"Quanhao Li, Junqiu Yu, Kaixun Jiang, Yujie Wei, Zhen Xing, Pandeng Li, Ruihang Chu, Shiwei Zhang, Yu Liu, Zuxuan Wu",first:"Quanhao Li",
+ arxiv:"2605.15055",date:"2026-05-11",status:"todo",
+ tags:["opd","diffusion-models"],theme:"扩散模型 / 多任务",
+ proposition:"多任务扩散模型 RL 难做：联合优化有跨任务干扰，级联 RL 易灾难遗忘；先独立训练 task-specific teachers，再沿 student 自己的 rollout 轨迹把能力蒸馏进统一 student——解耦单任务探索与多任务整合。",
+ method:"把 OPD 从离散 token 提升到连续状态 Markov 过程；推导闭式 per-step KL 目标（mean-matching 统一 SDE / ODE）；解析梯度 vs PPO-style policy gradient 方差更低、泛化更好",
+ numbers:"训练效率与最终性能全面超越 multi-reward RL 与 cascade RL 基线；所评基准全部 SOTA",
+ link:"https://arxiv.org/abs/2605.15055"},
+{id:"uni-opd",idx:10,folder:"2026_uni-opd",short:"Uni-OPD",
+ title:"Uni-OPD: Unifying On-Policy Distillation with a Dual-Perspective Recipe",
+ oneLine:"双视角统一配方统一 OPD",
+ authors:"Wenjin Hou, Shangpin Peng, Weinong Wang, Zheng Ruan, Yue Zhang, Zhenglin Zhou, Mingqi Gao, Yifei Chen, Kaiqi Wang, Hongming Yang, Chengquan Zhang, Zhuotao Tian, Han Hu, Yi Yang, Fei Wu, Hehe Fan",first:"Wenjin Hou",
+ arxiv:"2605.03677",date:"2026-05-14",status:"todo",
+ tags:["opd","unified","post-training"],theme:"统一框架",
+ proposition:"OPD 可靠改进的两个根本瓶颈：informative states 探索不足 ＋ teacher 对 student rollouts 的监督不可靠（聚合 token 级指导与 outcome reward 序不一致）。",
+ method:"双视角配方：student 视角两种 data balancing 策略促 informative state 探索；teacher 视角 outcome-guided margin calibration 恢复正/负轨迹间 order consistency",
+ numbers:"5 domains、16 benchmarks；覆盖 LLM＋MLLM、单/多 teacher、strong-to-weak、跨模态蒸馏",
+ link:"https://arxiv.org/abs/2605.03677"}
+];
+/* 关系图：节点坐标 + 边（类型: inherit/compare/extend/empirical） */
+const NODES={
+ survey:{x:500,y:64}, revisiting:{x:140,y:190}, "many-faces":{x:140,y:340},
+ "self-distilled":{x:400,y:190}, exopd:{x:400,y:340},
+ "uni-opd":{x:660,y:190}, diffusionopd:{x:660,y:340},
+ lightning:{x:270,y:492}, "prune-opd":{x:520,y:492}, "f-opd":{x:770,y:492}
+};
+const EDGES=[
+ {a:"survey",b:"revisiting",t:"empirical",label:"综述三轴 → 失败模式实证"},
+ {a:"survey",b:"many-faces",t:"empirical",label:"综述三轴 → 陷阱机制实证"},
+ {a:"survey",b:"uni-opd",t:"inherit",label:"统一框架呼应"},
+ {a:"survey",b:"diffusionopd",t:"extend",label:"离散token → 连续状态"},
+ {a:"many-faces",b:"self-distilled",t:"empirical",label:"OPSD何时有效/失效"},
+ {a:"revisiting",b:"many-faces",t:"compare",label:"同为失败模式实证"},
+ {a:"revisiting",b:"prune-opd",t:"extend",label:"prefix drift → 动态剪枝"},
+ {a:"revisiting",b:"lightning",t:"compare",label:"teacher监督可靠性"},
+ {a:"exopd",b:"uni-opd",t:"compare",label:"reward scaling vs margin校准"},
+ {a:"exopd",b:"self-distilled",t:"compare",label:"超越老师 vs 无需老师"},
+ {a:"lightning",b:"f-opd",t:"compare",label:"离线化 vs 异步freshness"},
+ {a:"prune-opd",b:"f-opd",t:"compare",label:"剪枝 vs freshness调节"}
+];
+const STATUS_ZH={todo:"待读",reading:"在读",done:"已读"};
+/* ================= 渲染 ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+let query="", activeTag=null;
+
+/* ---- 统计 ---- */
+(function(){
+  const done=PAPERS.filter(p=>p.status==="done").length;
+  const dates=PAPERS.map(p=>p.date).sort();
+  $("#stats").innerHTML=
+    `<div class="stat"><b>${PAPERS.length}</b> 篇论文</div>`+
+    `<div class="stat"><b>${done}</b> 已读 · <b>${PAPERS.length-done}</b> 待读</div>`+
+    `<div class="stat">时间跨度 <b>${dates[0]}</b> → <b>${dates[dates.length-1]}</b></div>`+
+    `<div class="stat">主题 <b>${new Set(PAPERS.map(p=>p.theme)).size}</b> 类</div>`;
+})();
+
+/* ---- 卡片 ---- */
+function match(p){
+  const hay=(p.title+" "+p.authors+" "+p.tags.join(" ")+" "+p.oneLine+" "+p.proposition+" "+p.method+" "+p.numbers+" "+p.theme).toLowerCase();
+  const qok=!query||hay.includes(query);
+  const tok=!activeTag||p.tags.includes(activeTag);
+  return qok&&tok;
+}
+function renderCards(){
+  $("#cardGrid").innerHTML=PAPERS.filter(match).map(p=>`
+   <div class="card">
+     <span class="badge ${p.status}">${STATUS_ZH[p.status]||p.status}</span>
+     <h3><a href="${p.link}" target="_blank" rel="noopener">${esc(p.title)}</a></h3>
+     <div class="meta">${esc(p.authors)} · arXiv:${p.arxiv} · ${p.date} · #${p.idx}</div>
+     <div class="oneline">${esc(p.oneLine)}</div>
+     <div class="kv"><b>核心命题：</b>${esc(p.proposition)}</div>
+     <div class="kv"><b>关键方法：</b>${esc(p.method)}</div>
+     <div class="nums"><b>关键数字：</b>${esc(p.numbers)}</div>
+     <div class="tags">${p.tags.map(t=>`<span class="tag" data-tag="${t}">${t}</span>`).join("")}</div>
+   </div>`).join("")||`<p class="desc">没有匹配的论文。</p>`;
+  document.querySelectorAll("#cardGrid .tag").forEach(el=>el.onclick=()=>{
+    activeTag=(activeTag===el.dataset.tag)?null:el.dataset.tag; renderAll();
+  });
+}
+
+/* ---- 时间线 ---- */
+(function(){
+  const box=$("#timelineBox");
+  const ds=PAPERS.map(p=>p.date).sort();
+  const t0=new Date(ds[0]).getTime(), t1=new Date(ds[ds.length-1]).getTime();
+  const byDate={};
+  PAPERS.forEach(p=>{(byDate[p.date]=byDate[p.date]||[]).push(p);});
+  Object.keys(byDate).sort().forEach((d,i)=>{
+    const pct=((new Date(d).getTime()-t0)/Math.max(1,(t1-t0))*96+2).toFixed(2);
+    byDate[d].forEach((p,j)=>{
+      const top=(i%2===0); // 上下交错
+      const dot=document.createElement("div");
+      dot.className="tl-dot"; dot.style.left=pct+"%"; dot.title=p.title;
+      dot.onclick=()=>{document.getElementById("cards").scrollIntoView({behavior:"smooth"});};
+      const lab=document.createElement("div");
+      lab.className="tl-label "+(top?"tl-top":"tl-bottom"); lab.style.left=pct+"%";
+      lab.innerHTML=`<div class="t">${esc(p.short)}</div><div class="d">${p.date}<br>arXiv:${p.arxiv}</div>`;
+      lab.title=p.title;
+      box.appendChild(dot); box.appendChild(lab);
+    });
+  });
+})();
+
+/* ---- 关系图 ---- */
+const NS="http://www.w3.org/2000/svg";
+function el(n,attrs,parent){const e=document.createElementNS(NS,n);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+(function(){
+  const svg=$("#graph"), W=150, H=64;
+  const defs=el("defs",{},svg);
+  [["inherit","#1d4ed8"],["compare","#c2410c"],["extend","#047857"],["empirical","#7e22ce"]].forEach(([t,c])=>{
+    const m=el("marker",{id:"arr-"+t,viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"},defs);
+    el("path",{d:"M0,0 L10,5 L0,10 z",fill:c},m);
+  });
+  const edgeEls={}, nodeEls={};
+  const mid={};
+  EDGES.forEach((e,i)=>{
+    const A=NODES[e.a],B=NODES[e.b];
+    const mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+    const dx=B.x-A.x, dy=B.y-A.y, len=Math.hypot(dx,dy)||1;
+    const off=Math.min(34,len*0.18);
+    const cx=mx-dy/len*off, cy=my+dx/len*off;
+    // 起终点收缩到节点矩形边缘
+    const shrink=(P,Q)=>{const ddx=Q.x-P.x,ddy=Q.y-P.y,l=Math.hypot(ddx,ddy)||1;
+      const t=Math.min(Math.abs((W/2+6)/(ddx||1e-6)),Math.abs((H/2+6)/(ddy||1e-6)));
+      return {x:P.x+ddx*Math.min(t,0.9), y:P.y+ddy*Math.min(t,0.9)};};
+    const S=shrink(A,B), T=shrink(B,A);
+    const g=el("g",{class:"g-edge e-"+e.t,"data-a":e.a,"data-b":e.b},svg);
+    el("path",{d:`M${S.x},${S.y} Q${cx},${cy} ${T.x},${T.y}`,class:"g-edge e-"+e.t,"marker-end":`url(#arr-${e.t})`,"data-a":e.a,"data-b":e.b},g);
+    const lx=(S.x+2*cx+T.x)/4, ly=(S.y+2*cy+T.y)/4;
+    const tx=el("text",{x:lx,y:ly-6,class:"g-elabel","text-anchor":"middle","data-a":e.a,"data-b":e.b},g);
+    tx.textContent=e.label;
+    mid[i]={x:lx,y:ly};
+    (edgeEls[e.a]=edgeEls[e.a]||[]).push(g); (edgeEls[e.b]=edgeEls[e.b]||[]).push(g);
+  });
+  PAPERS.forEach(p=>{
+    const n=NODES[p.id];
+    const g=el("g",{class:"g-node","data-id":p.id},svg);
+    const r=el("rect",{x:n.x-W/2,y:n.y-H/2,width:W,height:H,rx:10},g);
+    const t1=el("text",{x:n.x,y:n.y-6,"text-anchor":"middle"},g); t1.textContent=p.short;
+    const t2=el("text",{x:n.x,y:n.y+14,"text-anchor":"middle",class:"arxiv"},g); t2.textContent="arXiv:"+p.arxiv;
+    const ti=el("title",{},g); ti.textContent=p.title;
+    nodeEls[p.id]=g;
+    g.addEventListener("click",ev=>{ev.stopPropagation();highlight(p.id);});
+  });
+  let sel=null;
+  function highlight(id){
+    if(sel===id){sel=null;
+      svg.querySelectorAll(".dim").forEach(e=>e.classList.remove("dim"));return;}
+    sel=id;
+    const keep=new Set([id]);
+    EDGES.forEach(e=>{if(e.a===id||e.b===id){keep.add(e.a);keep.add(e.b);}});
+    PAPERS.forEach(p=>nodeEls[p.id].classList.toggle("dim",!keep.has(p.id)));
+    svg.querySelectorAll("g.g-edge").forEach(g=>{
+      const a=g.getAttribute("data-a"),b=g.getAttribute("data-b");
+      g.classList.toggle("dim",!(a===id||b===id));
+    });
+  }
+  svg.addEventListener("click",()=>{sel=null;svg.querySelectorAll(".dim").forEach(e=>e.classList.remove("dim"));});
+})();
+
+/* ---- 对比表（可排序） ---- */
+let sortK="idx", sortDir=1;
+function renderTable(){
+  const rows=PAPERS.filter(match).slice().sort((a,b)=>{
+    let x=a[sortK],y=b[sortK];
+    if(sortK==="title"){x=a.title.toLowerCase();y=b.title.toLowerCase();}
+    if(sortK==="numbers"){x=a.numbers;y=b.numbers;}
+    return (x<y?-1:x>y?1:0)*sortDir;
+  });
+  $("#cmpBody").innerHTML=rows.map(p=>`<tr>
+    <td>${p.idx}</td>
+    <td><div class="t"><a href="${p.link}" target="_blank" rel="noopener">${esc(p.title)}</a></div>
+        <div class="meta">${esc(p.oneLine)}</div></td>
+    <td style="white-space:nowrap">${p.arxiv}</td><td style="white-space:nowrap">${p.date}</td>
+    <td>${esc(p.first)} et al.</td><td>${esc(p.theme)}</td>
+    <td style="min-width:220px">${esc(p.numbers)}</td>
+    <td><span class="badge ${p.status}">${STATUS_ZH[p.status]||p.status}</span></td>
+  </tr>`).join("");
+  document.querySelectorAll("#cmpTable th").forEach(th=>{
+    const k=th.dataset.k;
+    th.innerHTML=th.textContent.replace(/ [▲▼]/g,"")+(k===sortK?` <span class="arrow">${sortDir>0?"▲":"▼"}</span>`:"");
+  });
+}
+document.querySelectorAll("#cmpTable th").forEach(th=>th.onclick=()=>{
+  const k=th.dataset.k;
+  if(sortK===k)sortDir*=-1; else {sortK=k;sortDir=1;}
+  renderTable();
+});
+
+/* ---- 主题分布 ---- */
+(function(){
+  const c={}; PAPERS.forEach(p=>p.tags.forEach(t=>c[t]=(c[t]||0)+1));
+  $("#tagCloud").innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1])
+    .map(([t,n])=>`<span class="tag" data-tag="${t}" style="font-size:${12+Math.min(6,n*2)}px">${t} ×${n}</span>`).join(" ");
+  document.querySelectorAll("#tagCloud .tag").forEach(elm=>elm.onclick=()=>{
+    activeTag=(activeTag===elm.dataset.tag)?null:elm.dataset.tag; renderAll();
+    document.getElementById("cards").scrollIntoView({behavior:"smooth"});
+  });
+})();
+
+/* ---- 搜索 ---- */
+let deb=null;
+$("#q").addEventListener("input",e=>{clearTimeout(deb);deb=setTimeout(()=>{query=e.target.value.trim().toLowerCase();renderAll();},180);});
+
+function renderAll(){renderCards();renderTable();}
+renderAll();
+</script>
+</body>
+</html>
