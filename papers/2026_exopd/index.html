@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ExOPD — ExOPD: Learning beyond Teacher \u2014 Generalized On-Policy Distillation with Reward Extrapolation</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --bg:#f7f5f1; --card:#ffffff; --ink:#23272f; --muted:#6b7280;
+  --accent:#1e40af; --accent-ink:#1e3a8a; --accent-bg:#eff6ff;
+  --border:#e8e4dc; --radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased}
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:50}
+.wrap{max-width:800px;margin:0 auto;padding:32px 20px 80px}
+.hero{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;border-radius:20px;padding:40px 36px}
+.kicker{display:inline-block;font-size:13px;letter-spacing:.1em;background:rgba(255,255,255,.18);padding:4px 14px;border-radius:999px;margin-bottom:16px}
+.hero h1{margin:0 0 10px;font-size:29px;line-height:1.45;font-weight:700}
+.hero .sub{opacity:.88;font-size:14.5px;margin:0}
+.disclaimer{font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--border);
+  border-radius:12px;padding:10px 16px;margin:16px 0 0;line-height:1.7}
+.toc{position:sticky;top:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:12px 18px;margin:20px 0;box-shadow:0 2px 12px rgba(0,0,0,.05);z-index:10}
+.toc summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);list-style:none}
+.toc summary::-webkit-details-marker{display:none}
+.toc nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.toc a{font-size:13.5px;color:var(--accent-ink);background:var(--accent-bg);padding:4px 12px;border-radius:999px;text-decoration:none}
+.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:30px 34px;margin:0 0 18px;box-shadow:0 1px 6px rgba(0,0,0,.03);scroll-margin-top:80px}
+.sec h2{margin:0 0 18px;font-size:21px;display:flex;align-items:center;gap:12px;line-height:1.5}
+.sec h2 .n{display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--accent-bg);
+  color:var(--accent-ink);font-size:15px;align-items:center;justify-content:center;flex:none;font-weight:700}
+.sec h3{font-size:17.5px;margin:26px 0 10px}
+.sec p{margin:0 0 14px}
+.sec ul,.sec ol{margin:0 0 14px;padding-left:24px}
+.sec li{margin-bottom:10px}
+.sec li::marker{color:var(--accent);font-weight:600}
+.sec-lede{background:linear-gradient(180deg,#eff6ff 0%,#ffffff 100%);border-color:#bfdbfe}
+.sec-lede p{font-size:18px}
+.sec-qa ol{list-style:none;padding:0;counter-reset:q}
+.sec-qa ol>li{counter-increment:q;background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px 18px 66px;position:relative;margin-bottom:14px}
+.sec-qa ol>li::before{content:counter(q);position:absolute;left:20px;top:20px;width:30px;height:30px;
+  border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;
+  justify-content:center;font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:6px 0 4px;line-height:1.6}
+th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#f3f4f6;font-weight:600;white-space:nowrap}
+tr:nth-child(even) td{background:#fafafa}
+a{color:var(--accent)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f3f4f6;padding:2px 6px;border-radius:6px;font-size:.88em}
+.katex{font-size:1.05em}
+.katex-display{margin:18px 0;overflow-x:auto;overflow-y:hidden}
+.tag{display:inline-block;font-size:12.5px;background:#f3f4f6;border:1px solid var(--border);
+  border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:2px;margin:4px 0 10px}
+.todo{color:#b45309;font-weight:600}
+.foot{text-align:center;color:var(--muted);font-size:13.5px;margin-top:36px;line-height:2}
+.foot a{color:var(--accent)}
+@media(max-width:640px){.sec{padding:22px 20px}.hero{padding:30px 24px}.hero h1{font-size:23px}body{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="wrap">
+  <header class="hero">
+    <span class="kicker">opd-reading-list · 论文 03/10</span>
+    <h1>ExOPD: Learning beyond Teacher \u2014 Generalized On-Policy Distillation with Reward Extrapolation</h1>
+    <p class="sub">完整阅读版 · 由 GitHub NOTES.md 生成</p>
+  </header>
+  <p class="disclaimer">⚠️ 内容来源：arXiv 摘要与仓库 NOTES 骨架（论文尚未精读）。命题 / 方法 / 数字均来自摘要提炼，未经全文核对；缺失处标注「待精读」。请以 <a href="https://arxiv.org/abs/2602.12125">arXiv 原文</a>为准。</p>
+  <details class="toc" open>
+    <summary>目录（点击跳转）</summary>
+    <nav><a href="#sec-1">元信息</a><a href="#sec-2">一句话总结</a><a href="#sec-3">核心命题</a><a href="#sec-4">方法与机制</a><a href="#sec-5">关键数字</a><a href="#sec-6">在 OPD 主题中的位置</a><a href="#sec-7">思考题</a><a href="#sec-8">参考链接</a></nav>
+  </details>
+<section class="sec" id="sec-1"><h2><span class="n">1</span>元信息</h2>
+<ul>
+<li>Title: ExOPD: Learning beyond Teacher \u2014 Generalized On-Policy Distillation with Reward Extrapolation</li>
+<li>Authors: Wenkai Yang, Weijie Liu, Ruobing Xie, Kai Yang, Saiyong Yang, Yankai Lin（arXiv 元信息，待精读核对）</li>
+<li>arXiv: <a href="https://arxiv.org/abs/2602.12125">https://arxiv.org/abs/2602.12125</a></li>
+<li>arXiv 发布日期: 2026-02-12</li>
+<li>Date added: 2026-09-17</li>
+<li>Date read: <span class="todo">待精读</span></li>
+<li>Tags: <span class="tag">opd</span><span class="tag">reward-extrapolation</span><span class="tag">post-training</span></li>
+<li>Source: Bilibili 丁师兄大模型评论区清单</li>
+<li>GitHub: <a href="https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_exopd/NOTES.md">https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_exopd/NOTES.md</a></li>
+</ul>
+</section>
+<section class="sec sec-lede" id="sec-2"><h2><span class="n">2</span>一句话总结</h2>
+<p>用 reward 外推实现 generalized OPD，让学生超越老师</p>
+</section>
+<section class="sec" id="sec-3"><h2><span class="n">3</span>核心命题</h2>
+<ul><li>理论证明 OPD 是 dense KL-约束 RL 的特例（reward 与 KL 恒等权重）</li><li>提出 G-OPD 框架：可调 reference model ＋ reward scaling 因子</li><li>scaling > 1（即 ExOPD）让学生突破老师性能边界。</li></ul>
+</section>
+<section class="sec" id="sec-4"><h2><span class="n">4</span>方法与机制</h2>
+<ul><li>G-OPD 框架</li><li>reward extrapolation（scaling > 1）</li><li>strong-to-weak 下用 teacher 的 pre-RL base 做 reference 做 reward correction（需访问 teacher 预 RL 版本，开销更大）</li></ul>
+</section>
+<section class="sec" id="sec-5"><h2><span class="n">5</span>关键数字</h2>
+<ul><li>多领域专家 merge 回 student 后，ExOPD 超越各 domain teacher 的性能边界</li></ul>
+</section>
+<section class="sec" id="sec-6"><h2><span class="n">6</span>在 OPD 主题中的位置</h2>
+<ul><li>理论贡献：证明 OPD 是 dense KL-约束 RL 的特例（reward 与 KL 取恒等权重）；提出 G-OPD 框架——可调 reference model ＋ reward scaling 因子 $\alpha$。</li><li>当 $\alpha &gt; 1$（即 ExOPD）时，reward 外推让学生突破老师的性能边界：蒸馏不再是「追平老师」，而是「以老师为起点继续优化」。</li><li>strong-to-weak 场景下用 teacher 的 pre-RL base 做 reference 做 reward correction——代价是需要访问 teacher 的预 RL 版本，开销更大。</li><li>与 <em>self-distilled-reasoner</em> 对照：一个用 reward 外推超越老师，一个连外部老师都不要；两条「超越/摆脱老师」的不同路线。</li><li>实证：多领域专家 merge 回 student 后，ExOPD 超越各 domain teacher 的性能边界。</li></ul>
+</section>
+<section class="sec sec-qa" id="sec-7"><h2><span class="n">7</span>思考题</h2>
+<ol><li>reward scaling $\alpha &gt; 1$ 为什么能让学生超越老师？从 KL-约束 RL 的视角看，调大 $\alpha$ 本质上是在放宽什么约束？</li><li>strong-to-weak 下需要 teacher 的 pre-RL base 做 reference 才能做 reward correction——这个「需要访问老师预 RL 版本」的要求在实践中多苛刻？有没有不依赖它的替代方案？</li></ol>
+</section>
+<section class="sec" id="sec-8"><h2><span class="n">8</span>参考链接</h2>
+<ul>
+<li>arXiv: <a href="https://arxiv.org/abs/2602.12125">https://arxiv.org/abs/2602.12125</a></li>
+<li>GitHub NOTES: <a href="https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_exopd/NOTES.md">https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_exopd/NOTES.md</a></li>
+</ul>
+</section>
+  <div class="foot">由 <a href="https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_exopd/NOTES.md">GitHub NOTES.md</a> 生成 · 公式由 KaTeX 渲染（需联网加载）</div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "$", right: "$", display: false}
+    ],
+    throwOnError: false
+  });
+  var bar = document.getElementById("progress");
+  window.addEventListener("scroll", function() {
+    var h = document.documentElement;
+    var p = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = p + "%";
+  }, {passive: true});
+});
+</script>
+</body>
+</html>

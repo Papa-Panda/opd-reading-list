@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prune-OPD — Prune-OPD: Efficient and Reliable On-Policy Distillation for Long-Horizon Reasoning</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --bg:#f7f5f1; --card:#ffffff; --ink:#23272f; --muted:#6b7280;
+  --accent:#1e40af; --accent-ink:#1e3a8a; --accent-bg:#eff6ff;
+  --border:#e8e4dc; --radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased}
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:50}
+.wrap{max-width:800px;margin:0 auto;padding:32px 20px 80px}
+.hero{background:linear-gradient(135deg,#1e3a8a,#3b82f6);color:#fff;border-radius:20px;padding:40px 36px}
+.kicker{display:inline-block;font-size:13px;letter-spacing:.1em;background:rgba(255,255,255,.18);padding:4px 14px;border-radius:999px;margin-bottom:16px}
+.hero h1{margin:0 0 10px;font-size:29px;line-height:1.45;font-weight:700}
+.hero .sub{opacity:.88;font-size:14.5px;margin:0}
+.disclaimer{font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--border);
+  border-radius:12px;padding:10px 16px;margin:16px 0 0;line-height:1.7}
+.toc{position:sticky;top:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:12px 18px;margin:20px 0;box-shadow:0 2px 12px rgba(0,0,0,.05);z-index:10}
+.toc summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--muted);list-style:none}
+.toc summary::-webkit-details-marker{display:none}
+.toc nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.toc a{font-size:13.5px;color:var(--accent-ink);background:var(--accent-bg);padding:4px 12px;border-radius:999px;text-decoration:none}
+.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:30px 34px;margin:0 0 18px;box-shadow:0 1px 6px rgba(0,0,0,.03);scroll-margin-top:80px}
+.sec h2{margin:0 0 18px;font-size:21px;display:flex;align-items:center;gap:12px;line-height:1.5}
+.sec h2 .n{display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--accent-bg);
+  color:var(--accent-ink);font-size:15px;align-items:center;justify-content:center;flex:none;font-weight:700}
+.sec h3{font-size:17.5px;margin:26px 0 10px}
+.sec p{margin:0 0 14px}
+.sec ul,.sec ol{margin:0 0 14px;padding-left:24px}
+.sec li{margin-bottom:10px}
+.sec li::marker{color:var(--accent);font-weight:600}
+.sec-lede{background:linear-gradient(180deg,#eff6ff 0%,#ffffff 100%);border-color:#bfdbfe}
+.sec-lede p{font-size:18px}
+.sec-qa ol{list-style:none;padding:0;counter-reset:q}
+.sec-qa ol>li{counter-increment:q;background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px 18px 66px;position:relative;margin-bottom:14px}
+.sec-qa ol>li::before{content:counter(q);position:absolute;left:20px;top:20px;width:30px;height:30px;
+  border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;
+  justify-content:center;font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:6px 0 4px;line-height:1.6}
+th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#f3f4f6;font-weight:600;white-space:nowrap}
+tr:nth-child(even) td{background:#fafafa}
+a{color:var(--accent)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f3f4f6;padding:2px 6px;border-radius:6px;font-size:.88em}
+.katex{font-size:1.05em}
+.katex-display{margin:18px 0;overflow-x:auto;overflow-y:hidden}
+.tag{display:inline-block;font-size:12.5px;background:#f3f4f6;border:1px solid var(--border);
+  border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:2px;margin:4px 0 10px}
+.todo{color:#b45309;font-weight:600}
+.foot{text-align:center;color:var(--muted);font-size:13.5px;margin-top:36px;line-height:2}
+.foot a{color:var(--accent)}
+@media(max-width:640px){.sec{padding:22px 20px}.hero{padding:30px 24px}.hero h1{font-size:23px}body{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="wrap">
+  <header class="hero">
+    <span class="kicker">opd-reading-list · 论文 06/10</span>
+    <h1>Prune-OPD: Efficient and Reliable On-Policy Distillation for Long-Horizon Reasoning</h1>
+    <p class="sub">完整阅读版 · 由 GitHub NOTES.md 生成</p>
+  </header>
+  <p class="disclaimer">⚠️ 内容来源：arXiv 摘要与仓库 NOTES 骨架（论文尚未精读）。命题 / 方法 / 数字均来自摘要提炼，未经全文核对；缺失处标注「待精读」。请以 <a href="https://arxiv.org/abs/2605.07804">arXiv 原文</a>为准。</p>
+  <details class="toc" open>
+    <summary>目录（点击跳转）</summary>
+    <nav><a href="#sec-1">元信息</a><a href="#sec-2">一句话总结</a><a href="#sec-3">核心命题</a><a href="#sec-4">方法与机制</a><a href="#sec-5">关键数字</a><a href="#sec-6">在 OPD 主题中的位置</a><a href="#sec-7">思考题</a><a href="#sec-8">参考链接</a></nav>
+  </details>
+<section class="sec" id="sec-1"><h2><span class="n">1</span>元信息</h2>
+<ul>
+<li>Title: Prune-OPD: Efficient and Reliable On-Policy Distillation for Long-Horizon Reasoning</li>
+<li>Authors: Zhicheng Yang, Zhijiang Guo, Yifan Song, Minrui Xu, Yongxin Wang, Yiwei Wang, Xiaodan Liang, Jing Tang（arXiv 元信息，待精读核对）</li>
+<li>arXiv: <a href="https://arxiv.org/abs/2605.07804">https://arxiv.org/abs/2605.07804</a></li>
+<li>arXiv 发布日期: 2026-05-18</li>
+<li>Date added: 2026-09-17</li>
+<li>Date read: <span class="todo">待精读</span></li>
+<li>Tags: <span class="tag">opd</span><span class="tag">long-horizon</span><span class="tag">reasoning</span><span class="tag">efficiency</span></li>
+<li>Source: Bilibili 丁师兄大模型评论区清单</li>
+<li>GitHub: <a href="https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_prune-opd/NOTES.md">https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_prune-opd/NOTES.md</a></li>
+</ul>
+</section>
+<section class="sec sec-lede" id="sec-2"><h2><span class="n">2</span>一句话总结</h2>
+<p>面向长程推理的高效可靠 OPD（剪枝）</p>
+</section>
+<section class="sec" id="sec-3"><h2><span class="n">3</span>核心命题</h2>
+<ul><li>长程任务中 student 前缀必然漂离 teacher 思维链，teacher 密集 reward 失去局部可利用性</li><li>在已漂移轨迹上继续生成＋打分是纯算力浪费。</li></ul>
+</section>
+<section class="sec" id="sec-4"><h2><span class="n">4</span>方法与机制</h2>
+<ul><li>top-k overlap 实时监控 student-teacher 局部兼容性</li><li>检测到严重 drift 时单调降权后续 reward 并动态截断 rollout</li><li>兼容性高时自动扩展训练窗口（不是无脑截短，而是把算力重分配给可靠监督）</li></ul>
+</section>
+<section class="sec" id="sec-5"><h2><span class="n">5</span>关键数字</h2>
+<ul><li>训练时间 -37.6% ~ -68.0%</li><li>AMC / AIME / HMMT 性能保持或提升</li></ul>
+</section>
+<section class="sec" id="sec-6"><h2><span class="n">6</span>在 OPD 主题中的位置</h2>
+<ul><li>长程推理中 student 前缀必然漂离 teacher 的思维链，teacher 的密集 reward 失去局部可利用性——在已漂移轨迹上继续生成＋打分是纯算力浪费。</li><li>方法：用 top-k overlap 实时监控 student-teacher 局部兼容性；检测到严重 drift 时<strong>单调降权后续 reward 并动态截断 rollout</strong>；兼容性高时自动扩展训练窗口。</li><li>关键设计哲学：不是无脑截短，而是把算力重分配给可靠监督——剪枝的是「不可靠的监督」，不是「长的轨迹」。</li><li>数字：训练时间 <strong>-37.6% ~ -68.0%</strong>；AMC / AIME / HMMT 性能保持或提升。</li><li>与 <em>f-opd</em> 同属长程稳定：prune 是同步训练内的算力重分配，f-opd 是异步训练的 freshness 控制——同一病因（drift），两种执行环境下的药方。</li></ul>
+</section>
+<section class="sec sec-qa" id="sec-7"><h2><span class="n">7</span>思考题</h2>
+<ol><li>用 top-k overlap 做「局部兼容性」的代理：这个启发式什么时候会误判？（比如 teacher 和 student 用不同但等价的推理路径时，overlap 低但监督仍有效？）</li><li>降权＋截断 vs 直接丢弃漂移轨迹：保留「部分可信」的后半段监督价值在哪？单调降权的「单调」为什么重要（和优化稳定性什么关系）？</li></ol>
+</section>
+<section class="sec" id="sec-8"><h2><span class="n">8</span>参考链接</h2>
+<ul>
+<li>arXiv: <a href="https://arxiv.org/abs/2605.07804">https://arxiv.org/abs/2605.07804</a></li>
+<li>GitHub NOTES: <a href="https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_prune-opd/NOTES.md">https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_prune-opd/NOTES.md</a></li>
+</ul>
+</section>
+  <div class="foot">由 <a href="https://github.com/Papa-Panda/opd-reading-list/blob/master/papers/2026_prune-opd/NOTES.md">GitHub NOTES.md</a> 生成 · 公式由 KaTeX 渲染（需联网加载）</div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "$", right: "$", display: false}
+    ],
+    throwOnError: false
+  });
+  var bar = document.getElementById("progress");
+  window.addEventListener("scroll", function() {
+    var h = document.documentElement;
+    var p = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = p + "%";
+  }, {passive: true});
+});
+</script>
+</body>
+</html>
